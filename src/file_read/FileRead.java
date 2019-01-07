@@ -1,6 +1,7 @@
+package file_read;
+
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 
 public class FileRead {
@@ -12,7 +13,7 @@ public class FileRead {
 			File dir = f.getAbsoluteFile().getParentFile();
 			String path = dir.toString();
 
-			BufferedReader br = new BufferedReader(new FileReader(path + "/src/ride_jetty_log.txt"));
+			BufferedReader br = new BufferedReader(new FileReader(path + "/src/file_read/ride_jetty_log.txt"));
 			try {
 				StringBuilder sb = new StringBuilder();
 				String line = br.readLine();
