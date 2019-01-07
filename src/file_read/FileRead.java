@@ -21,13 +21,15 @@ public class FileRead {
 				while (line != null) {
 					if (line.indexOf("qry-->") != -1) {
 						sb.append(line);
+						System.out.println(line);
+
 						sb.append(System.lineSeparator());
 						line = br.readLine();
 					}
 				}
 				String everything = sb.toString();
 
-				System.out.println(everything);
+				// System.out.println(everything);
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {

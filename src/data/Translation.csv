@@ -1,0 +1,136 @@
+ID,label_key,English value,?? value
+1,label.search.by,Search By,Búsqueda por
+2,label.search.parameters,Search Parameters,Parámetros de búsqueda
+3,label.report.from.date,Report From Date,Informe de fecha
+5,label.report.to.date,Report To Date,Informe hasta la fecha
+4,label.promotion.status,Promotion Status,Estado de la promoción
+6,label.country,Country,País
+7,label.city,City,Ciudad
+8,label.program.name,Program Name,Nombre del programa
+9,label.view.report,View Report,Vista del informe
+10,label.detailed,Detailed,Detallado
+11,label.summary,Summary,Resumen
+12,label.search.criteria,Search Criteria,Criterio de búsqueda
+13,label.reset,Reset,Reiniciar
+14,label.export.pdf,Export PDF,Exportar PDF
+15,label.export.excel,Export Excel,Exportar Excel
+16,label.view.pre.filter,View Pre Filter,Ver filtro previo
+17,label.activity.combination,Activity Combination,Combinación de actividades
+18,label.activity,Activity,Actividad
+19,label.period,Period,Período
+20,label.allotment.type,Allotment Type,Tipo de asignación
+21,label.from,From,De
+22,label.to,To,A
+23,label.day,Day,Día
+24,label.total.activities,Total Activities,Total de actividades
+25,label.date,Date,Fecha
+26,label.booked.activities,Booked Activities,Actividades reservadas
+27,label.avaliable.activities,Available Activities,Actividades Disponibles
+28,label.cutoff,Cut-Off,Cortar
+29,label.hotel.name,Hotel Name,Nombre del hotel
+30,label.inventory,Inventory,Inventario
+31,label.room.type,Room Type,Tipo de habitación
+32,label.bed.type,Bed Type,Tipo de cama
+33,label.rate.plan,Rate Plan,Plan tarifario
+34,label.black.out,Black out,Perder el conocimiento
+35,label.activity.type,Activity Type,Tipo de actividad
+36,label.inventory.type,Inventory Type,Tipo de inventario
+37,label.black.out.reason,Black out Reason,Black Out Razón
+38,label.supplier.name,Supplier Name,Nombre del proveedor
+39,label.Location.a,Location A,Ubicación A
+40,label.Location.b,Location B,Ubicación B
+41,label.service.type,Service Type,Tipo de servicio
+42,label.product.type,Product Type,tipo de producto
+43,label.vehicle.type,Vehicle Type,tipo de vehiculo
+44,label.location.a.b,Location A - B,Ubicación A - B
+45,label.location.b.a,Location B - A,Ubicación B - A
+46,label.one.way,One Way,Un camino
+47,label.round.trip,Round Trip,Viaje ida y vuelta
+48,label.rate.type,Rate Type,Tipo de cambio
+49,label.contract.type,Contract Type,Tipo de contrato
+50,label.partner.type,Partner Type,Tipo de socio
+51,label.booking.channel,Booking Channel,Canal de reserva
+52,label.booking.type,Booking Type,Tipo de reserva
+53,label.currency.code,Currency Code,Código de moneda
+54,label.rate,Rate,Tarifa
+55,label.fixed.sell.rate,Fixed Sell Rate,Tarifa de venta fija
+56,label.time.slot,Time Slot,Ranura de tiempo
+57,label.seat.allocation.age,Seat Allocation Age,Edad de asignación de asientos
+58,label.seat.charge.applicable.age,Seat Charge Applicable Age,Cargo de asiento Edad aplicable
+59,label.apply.child.rate.upto,Apply Child Rate Upto,Aplicar tarifa infantil hasta
+60,label.language.supplementary,Language supplementary,Lenguaje complementario
+61,label.adult,Adult,Adulto
+62,label.child,Child,Niño
+63,label.date.period,Date Period,Período de la fecha
+64,label.any.period,Any Period,Cualquier período
+65,label.hotel.code,Hotel Code,Código del hotel
+66,label.address,Address,Dirección
+67,label.rate.contract,Rate Contract,Contrato de tarifa
+68,label.period.from,Period From,Periodo desde
+69,label.period.to,Period To,Período hasta
+70,label.contract.name,Contract Name,Nombre del contrato
+71,label.currency,Currency,Moneda
+72,label.market,Market,Mercado
+73,label.los.group,LOS Group,Grupo LOS
+74,label.room,Room,Habitación
+75,label.bed,Bed,Cama
+76,label.meal.plan,Meal Plan,Régimen de comidas
+77,label.cancellation.policy,Cancellation Policy,Política de cancelación
+78,label.tax,Tax,Impuesto
+79,label.billing.info,Billing Info,Información de facturación
+80,label.programe.code,Programe Code,Código de programa
+81,label.inventory.obtained.by,Inventory Obtained By,Inventario obtenido por
+82,label.private,Private,Privado
+83,label.additional.rate,Additional Rate,Tarifa adicional
+84,label.private.transfer,Private Transfer,Transferencia Privada
+85,label.shared,Shared,Compartido
+86,label.shared.transfer,Shared Transfer,Transferencia compartida
+137,label.bed.type.details,Bed Type Details,Detalles del tipo de cama
+138,label.route,Vehicle,Vehículo
+139,label.vehicle,Search Criteria,Criterio de búsqueda
+140,label.time.rate,Time Rate,Tasa de tiempo
+141,label.pax.rate,Pax Rate,Tarifa Pax
+142,label.language.rate,Language Rate,Tasa de idioma
+143,label.route.description,Route Description,Descripción de la ruta
+144,label.transfer.waiting.time,Transfer Waiting Time,Tiempo de espera de transferencia
+145,label.transfer.important.info,Transfer Important Info,Transferencia Información Importante
+146,label.approx.distance,Approx. Distance,Aprox. Distancia
+147,label.approx.journey.time,Approx. Journey Time,Aprox. Tiempo de viaje
+148,label.vehicle.general.info,Vehicle General Info,Información General del Vehículo
+87,label.total.rooms,Total Rooms,Total de habitaciones
+88,label.date,Date,Fecha
+89,label.total.rooms,Total Rooms,Total de habitaciones
+90,label.booked.rooms,Booked Rooms,Cuartos reservados
+91,label.available.rooms,Available Rooms,Cuartos disponibles
+92,label.cut.off,Cut-Off,Cortar
+93,label.contract,Contract,Contrato
+94,label.promotion.code,Promotion Code,El código de promoción
+95,label.promotion.name,Promotion Name,Nombre de la promoción
+96,label.promotion.type,Promotion Type,Tipo de promoción
+97,label.promotion,Promotion,Promoción
+98,label.booking.conditions,Booking Conditions,Condiciones de reserva
+99,label.travel.conditions,Travel Conditions,Condiciones de viaje
+100,label.inventory.contract,Inventory Contract,Contrato de inventario
+101,label.applicable.from,Applicable From,Aplicable desde
+102,label.applicable.to,Applicable To,Aplicable a
+103,label.applicable.days,Applicable Days,Días aplicables
+104,label.blackout.from,Blackout From,Apagón de
+105,label.blackout.to,Blackout To,Apagón a
+106,label.sdvance.purchase.from,Advance Purchase From,Compra anticipada de
+107,label.advance.purchase.to,Advance Purchase To,Compra anticipada a
+108,label.minimum.nights,Minimum Nights,Mínimo de noches
+109,label.apply.minimum.nights,Apply Minimum Nights,Aplicar noches mínimas
+110,label.report.content.by,Report Conent Of,Denunciar Conent Of
+111,label.dynamic.details,Dynamic Details,Detalles dinámicos
+112,label.static.details,Static Details,Detalles estáticos
+113,label.search.by.option,Search By Option,Buscar por opción
+114,label.by.contract,By Contract,Por contrato
+115,label.by.rate.plan,By Rate Plan,Por plan de tarifas
+116,label.by.hotel,By Hotel,Por Hotel
+117,label.by.room.type,By Room Type,Por tipo de habitación
+118,label.contract.rooms,Contract Rooms,Salas de contrato
+119,Label.hotel.tax.details,Hotel Tax Details,Detalles del impuesto sobre el hotel
+120,label.billing.information,Billing Information,Datos de facturación
+121,label.room.types.inventory,Room Types Inventory,Inventario de tipos de habitaciones
+122,label.rate.plan.rates,Rate Plan Rates,Precios de tarifas
+123,label.hotel,Hotel,Hotel
