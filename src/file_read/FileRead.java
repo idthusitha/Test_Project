@@ -19,13 +19,13 @@ public class FileRead {
 				String line = br.readLine();
 
 				while (line != null) {
-					if (line.indexOf("qry-->") != -1) {
+					if (line.indexOf("select ") != -1) {
 						sb.append(line);
-						System.out.println(line);
+						System.out.println("select "+line.split("select ")[1]);
 
 						sb.append(System.lineSeparator());
-						line = br.readLine();
 					}
+					line = br.readLine();
 				}
 				String everything = sb.toString();
 
