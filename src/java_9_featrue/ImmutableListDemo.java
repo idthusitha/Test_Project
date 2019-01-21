@@ -2,8 +2,6 @@ package java_9_featrue;
 
 import java.util.List;
 
-import org.apache.poi.util.SystemOutLogger;
-
 public class ImmutableListDemo {
 
 	public static void main(String[] args) {
@@ -13,8 +11,8 @@ public class ImmutableListDemo {
 
 		List immutableList = List.of();
 		System.out.println(immutableList);
-		
-		List immutableList2 = List.of("one","two","three");
+
+		List immutableList2 = List.of("one", "two", "three");
 		System.out.println(immutableList2);
 	}
 
