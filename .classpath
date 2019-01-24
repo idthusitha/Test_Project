@@ -19,5 +19,6 @@
 	<classpathentry kind="lib" path="lib/jxl-2.6.3.jar"/>
 	<classpathentry kind="lib" path="lib/junit-4.3.jar"/>
 	<classpathentry kind="lib" path="lib/postgresql-8.0-311.jdbc3.jar"/>
+	<classpathentry kind="lib" path="lib/json-20140107.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
