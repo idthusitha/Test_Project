@@ -5,10 +5,16 @@ import java.util.List;
 public class ImmutableListDemo {
 
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+
+		String version = System.getProperty("java.version");
+
+		System.out.println(version);
+
 		List immutableList = List.of();
-		
-		List immutableList2 = List.of("one","two","three");
+		System.out.println(immutableList);
+
+		List immutableList2 = List.of("one", "two", "three");
+		System.out.println(immutableList2);
 	}
 
 }
