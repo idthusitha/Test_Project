@@ -56,7 +56,7 @@ public class Other_Demo {
 
 		// double pi=3._1415_9265; // underscore just after decimal point
 		// long creditcardNum2=1234_4567_8901_2345_ L; // underscore at the end of number
-		// long ssn1=777_99_8888L; // undersocre at the beginning
+		// long ssn1=_777_99_8888L; // undersocre at the beginning
 
 		/*************************************/
 		
