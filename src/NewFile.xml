@@ -1,0 +1,19 @@
+<TicketAvailRQ xmlns:msxsl="urn:schemas-microsoft-com:xslt"
+	echoToken="DummyEchoToken" sessionId="REZ0.5717232011915827aa">
+	<Language>ENG</Language>
+	<Credentials>
+		<User>TEST123TEST</User>
+		<Password>TEST123TEST</Password>
+	</Credentials>
+	<PaginationData itemsPerPage="150" pageNumber="1" />
+	<ServiceOccupancy>
+		<AdultCount>1</AdultCount>
+		<ChildCount>0</ChildCount>
+		<GuestList>
+			<Customer type="AD" />
+		</GuestList>
+	</ServiceOccupancy>
+	<Destination code="CMB" type="SIMPLE" />
+	<DateFrom date="20190419" />
+	<DateTo date="20190420" />
+</TicketAvailRQ>
