@@ -267,11 +267,7 @@ public class HotelRatePlanLoaderTemp2 {
 					+ "   <RatePlans HotelCode=\"1111\">\n"
 					+ "      <RatePlan RatePlanCode=\"BBrek\" Start=\"2020-03-01\" End=\"2020-03-01\">\n"
 					+ "         <Rates>\n" + "            <Rate InvTypeCode=\"TopKing\" CurrencyCode=\"USD\">\n"
-					+ "               <BaseByGuestAmts>\n"
-					+ "                  <BaseByGuestAmt AmountBeforeTax=\"200\" NumberOfGuests=\"1\"/>\n"
-					+ "                  <BaseByGuestAmt AmountBeforeTax=\"100\" NumberOfGuests=\"3\"/>\n"
-					+ "                  <BaseByGuestAmt AmountBeforeTax=\"100\" NumberOfGuests=\"4\"/>\n"
-					+ "               </BaseByGuestAmts>\n" + "               <AdditionalGuestAmounts/>\n"
+					+ "               <BaseByGuestAmts/>\n"				
 					+ "            </Rate>\n" + "         </Rates>\n" + "      </RatePlan>\n"
 					+ "      <RatePlan RatePlanCode=\"BBrek\" Start=\"2020-03-02\" End=\"2020-03-02\">\n"
 					+ "         <Rates>\n" + "            <Rate InvTypeCode=\"TopKing\" CurrencyCode=\"USD\">\n"
@@ -404,11 +400,16 @@ public class HotelRatePlanLoaderTemp2 {
 					String CurrencyCode = invenroyCode.split("==")[2];
 					
 					responseXML += "<Rate InvTypeCode=\"" + inventory + "\" CurrencyCode=\""+CurrencyCode+"\">\n";					
-					responseXML += "<BaseByGuestAmts>\n";
-					for(String guest : guestStr) {
-						responseXML += "<BaseByGuestAmt AmountBeforeTax=\""+guest.split("\\|")[0]+"\" NumberOfGuests=\""+guest.split("\\|")[1]+"\"/>\n";
-					}				
-					responseXML += "</BaseByGuestAmts>\n";
+					
+					if(!"".equals(invenroyCode.split("==")[1])){
+						responseXML += "<BaseByGuestAmts>\n";
+						for(String guest : guestStr) {
+							responseXML += "<BaseByGuestAmt AmountBeforeTax=\""+guest.split("\\|")[0]+"\" NumberOfGuests=\""+guest.split("\\|")[1]+"\"/>\n";
+						}				
+						responseXML += "</BaseByGuestAmts>\n";
+					}else{
+						responseXML += "<BaseByGuestAmts/>\n";
+					}
 					
 					responseXML += "</Rate>\n";
 				}
