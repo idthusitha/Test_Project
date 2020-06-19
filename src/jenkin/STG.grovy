@@ -1,0 +1,46 @@
+stage_tag = env.tag
+target_env = env.targetEnv
+
+stage('Checkout') {
+    user: {
+        node('Slave') {
+            infra_branch = "master"
+            deleteDir()
+            checkout scm: [
+                $class: 'GitSCM',
+                userRemoteConfigs: [[
+                    url: "${repoPath}/accelaero-commons-infra",
+                    credentialsId: "${gitCredentials}"]],
+                branches: [[name: "${infra_branch}"]]]
+            stash name: 'commons-infra'
+        }
+    }
+}
+
+stage('Deploy staging') {
+    node('Slave') {
+        sh 'mkdir -p accelaero-commons-infra'
+        dir('accelaero-commons-infra') {
+            unstash 'commons-infra'
+            sh "export ACCEL_AERO_ROOT=\"${WORKSPACE}\"; python3 k8s/helm/accelaero/tools/install_all.py --project=aero-pay --env=${target_env} --source=oci --tag=${stage_tag}"
+            env_ready = false
+            attempt = 0
+            while (!env_ready) {
+                attempt += 1
+                namespace = "aero-pay-${target_env}"
+                status = sh(returnStatus: true, script: "export ACCEL_AERO_ROOT=\"${WORKSPACE}\"; python3 k8s/helm/accelaero/tools/env_status.py --project=aero-pay --namespace=${namespace}")
+                echo "status: ${status}"
+                if (status == 0) {
+                    env_ready = true
+                }
+                else {
+                    if (attempt == 10) {
+                        throw new Exception("${target_env} env is not stable!")
+                    }
+                    sleep 30
+                }
+            }
+        }
+        deleteDir()
+    }
+}

@@ -1,0 +1,541 @@
+def checkOutAeroPay() {
+    checkout scm: [$class: 'GitSCM', userRemoteConfigs: [[url: 'ssh://git@bitbucket.org/accelaero/aero-pay-mono-repo.git']], branches: [[name: 'master']]], poll: false
+}
+
+stage 'Checkout'
+
+parallel(
+        aeropay_api: {
+            node('aeropay_build_server') {
+                checkOutAeroPay()
+            }
+        },
+        web_app : {
+            node('aeropay_build_server') {
+                checkOutAeroPay()
+            }
+        },
+        envoy_proxy : {
+            node('aeropay_build_server') {
+                checkOutAeroPay()
+            }
+        },
+        aeropay_api_ifg_mock : {
+            node('aeropay_build_server') {
+                checkOutAeroPay()
+            }
+        },
+        aeropay_api_aeroagent_mock : {
+            node('aeropay_build_server') {
+                checkOutAeroPay()
+            }
+        }/*,
+        api_doc : {
+            node('aeropay_build_server'){
+                checkOutAeroPay()
+            }
+        }*/,
+        aeropay_api_test_harness : {
+            node('aeropay_build_server') {
+                checkOutAeroPay()
+            }
+        },
+        aeropay_api_aeromaster_mock : {
+            node('aeropay_build_server') {
+                checkOutAeroPay()
+            }
+        }
+
+)
+
+
+stage 'Build Services'
+
+parallel(
+        aeropay_api: {
+            node('aeropay_build_server') {
+                dir('services/aero-pay-api-service') {
+                    sh './gradlew clean build'
+                }
+            }
+        },
+        envoy_proxy: {
+            node('aeropay_build_server') {
+                dir('services/aero-pay-envoy-proxy-service') {
+                    sh './gradlew clean build'
+                    withCredentials([usernamePassword(credentialsId: 'OCIOS', passwordVariable: "AWS_SECRET_ACCESS_KEY", usernameVariable: "AWS_ACCESS_KEY_ID")]) {
+                        sh "aws s3 --endpoint-url=${oci_os_url} cp build/aeropay_service_definition.pb s3://accelaero-proto-descriptors/aero-pay/api-service/1.0.${BUILD_NUMBER}"
+                    }
+                }
+            }
+        },
+        aeropay_api_ifg_mock: {
+            node('aeropay_build_server') {
+                dir('services/aero-ifg-api-mock-service') {
+                    sh './gradlew clean build'
+                }
+            }
+        },
+        aeropay_api_aeroagent_mock: {
+            node('aeropay_build_server') {
+                dir('services/aero-agent-api-mock-service') {
+                    sh './gradlew clean build'
+                    withCredentials([usernamePassword(credentialsId: 'OCIOS', passwordVariable: "AWS_SECRET_ACCESS_KEY", usernameVariable: "AWS_ACCESS_KEY_ID")]) {
+                        sh "aws s3 --endpoint-url=${oci_os_url} cp build/aeroagent_mock_service.pb s3://accelaero-proto-descriptors/aero-pay/agent-mock-service/1.0.${BUILD_NUMBER}"
+                    }
+                }
+            }
+        },
+        aeropay_api_aeromaster_mock: {
+            node('aeropay_build_server') {
+                dir('services/aero-master-api-service') {
+                    sh './gradlew clean build'
+                }
+            }
+        }/*,api_doc :{
+            node('aeropay_build_server'){
+                dir('services/aero-pay-swagger-ui-service'){
+                    sh './generate-swaggerjson.sh'
+                }
+            }
+        }*/,
+        web_app : {
+            node('aeropay_build_server') {
+                echo "Directly move to docker build"
+            }
+        }
+        /*,
+        aeropay_api_test_harness: {
+            node('aeropay_build_server') {
+                dir('harness/aero-pay-test-harness') {
+                    sh './gradlew clean build -x test'
+                }
+            }
+        }*/
+)
+
+
+def sonarQubeAnalysis() {
+    withSonarQubeEnv('SonarQube') {
+        sh './gradlew sonarqube'
+    }
+}
+
+stage 'SonarQube Analysis'
+
+parallel(
+        aeropay_api: {
+            node('aeropay_build_server') {
+                dir('services/aero-pay-api-service') {
+                    sonarQubeAnalysis()
+                }
+            }
+        }
+)
+
+
+def checkQualityGate(){
+    timeout(time: 3, unit: 'MINUTES') {
+        def qg = waitForQualityGate()
+        if (qg.status != 'OK') {
+            //error "Pipeline aborted due to quality gate failure: ${qg.status}"
+        }
+    }
+}
+
+stage 'Check Quality Gate'
+
+parallel(
+        aeropay_api: {
+            node('aeropay_build_server') {
+                dir('services/aero-pay-api-service') {
+                    checkQualityGate()
+                }
+            }
+        }
+)
+
+stage 'Docker'
+
+parallel(
+        aeropay_api: {
+            node('aeropay_build_server') {
+                dir('services/aero-pay-api-service') {
+                    sh './gradlew buildDocker'
+                }
+            }
+        },
+        envoy_proxy: {
+          node('aeropay_build_server') {
+                dir('services/aero-pay-envoy-proxy-service') {
+                  sh 'docker build -t accelaero/aero-pay-envoy-proxy-service .'
+                }
+            }
+        },
+        aeropay_api_ifg_mock: {
+          node('aeropay_build_server') {
+                dir('services/aero-ifg-api-mock-service') {
+                  sh './gradlew buildDocker'
+                }
+            }
+        },
+        aeropay_api_aeroagent_mock: {
+            node('aeropay_build_server') {
+                dir('services/aero-agent-api-mock-service') {
+                    sh './gradlew buildDocker'
+                }
+            }
+        },
+        aeropay_api_aeromaster_mock: {
+            node('aeropay_build_server') {
+                dir('services/aero-master-api-service') {
+                    sh './gradlew buildDocker'
+                }
+            }
+        },
+        web_app : {
+            node('aeropay_build_server') {
+                dir('apps/aeroPayUI') {
+                    sh 'docker build -t accelaero/aero-pay-web-app .'
+                }
+                dir('apps/aeroPayCheckoutUI') {
+                    sh 'docker build -t accelaero/aero-pay-checkout-web-app .'
+                }
+            }
+        }/*,
+        api_doc : {
+            node('aeropay_build_server'){
+                sh 'docker rmi $(docker images | grep \'aero-pay-api-doc\' | awk \'{print $3}\') -f || echo "no images to remove"'
+                dir('services/aero-pay-swagger-ui-service'){
+                    sh 'docker build -t accelaero/api-doc .'
+                }
+            }
+        }
+        ,
+        aeropay_api_test_harness: {
+            node('aeropay_build_server') {
+                dir('harness/aero-pay-test-harness') {
+                    sh './gradlew buildDocker -x test'
+                }
+            }
+        }*/
+)
+
+
+stage 'Publish'
+
+parallel(
+        aeropay_api: {
+            node('aeropay_build_server') {
+                sh "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                sh "docker tag accelaero/aero-pay-api-service:latest accelaero/revamp/aero-pay/api-service:latest"
+
+                docker.withRegistry('https://fra.ocir.io') {
+                    docker.image('accelaero/revamp/aero-pay/api-service:latest').push('1.0.${BUILD_NUMBER}')
+                }
+
+                sh 'docker rmi $(docker images | grep \'aero-pay-api-service\' | awk \'{print $3}\') -f || echo "No matching api-service images to remove"'
+            }
+        },
+        envoy_proxy: {
+            node('aeropay_build_server') {
+                sh  "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                sh "docker tag accelaero/aero-pay-envoy-proxy-service:latest accelaero/revamp/aero-pay/envoy-proxy-service:latest"
+                docker.withRegistry('https://fra.ocir.io') {
+                    docker.image('accelaero/revamp/aero-pay/envoy-proxy-service:latest').push('1.0.${BUILD_NUMBER}')
+                }
+                sh 'docker rmi $(docker images | grep \'envoy-proxy\' | awk \'{print $3}\') -f || echo "No matching envoy-proxy images to remove"'
+
+            }
+        },
+        aeropay_api_ifg_mock: {
+            node('aeropay_build_server') {
+                sh  "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                sh "docker tag accelaero/aero-ifg-api-mock-service:latest accelaero/revamp/aero-pay/aero-ifg-api-mock-service:latest"
+                docker.withRegistry('https://fra.ocir.io') {
+                    docker.image('accelaero/revamp/aero-pay/aero-ifg-api-mock-service:latest').push('1.0.${BUILD_NUMBER}')
+                }
+                sh 'docker rmi $(docker images | grep \'aero-ifg-api-mock-service\' | awk \'{print $3}\') -f || echo "No matching aero-ifg-api-mock-service images to remove"'
+
+            }
+        },
+        aeropay_api_aeroagent_mock: {
+            node('aeropay_build_server') {
+                sh  "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                sh "docker tag accelaero/aero-agent-api-mock-service:latest accelaero/revamp/aero-pay/aero-agent-api-mock-service:latest"
+                docker.withRegistry('https://fra.ocir.io') {
+                    docker.image('accelaero/revamp/aero-pay/aero-agent-api-mock-service:latest').push('1.0.${BUILD_NUMBER}')
+                }
+                sh 'docker rmi $(docker images | grep \'aero-agent-api-mock-service\' | awk \'{print $3}\') -f || echo "No matching aero-agent-api-mock-service images to remove"'
+
+            }
+        },
+        aeropay_api_aeromaster_mock: {
+            node('aeropay_build_server') {
+                sh  "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                sh "docker tag accelaero/aero-master-api-service:latest accelaero/revamp/aero-pay/aero-master-api-service:latest"
+                docker.withRegistry('https://fra.ocir.io') {
+                    docker.image('accelaero/revamp/aero-pay/aero-master-api-service:latest').push('1.0.${BUILD_NUMBER}')
+                }
+                sh 'docker rmi $(docker images | grep \'aero-master-api-service\' | awk \'{print $3}\') -f || echo "No matching aero-master-api-service images to remove"'
+
+            }
+        },
+        web_app : {
+            node('aeropay_build_server') {
+
+                sh  "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                sh "docker tag accelaero/aero-pay-web-app:latest accelaero/revamp/aero-pay/aeropay-web-app:latest"
+                docker.withRegistry('https://fra.ocir.io') {
+                    docker.image('accelaero/revamp/aero-pay/aeropay-web-app:latest').push('1.0.${BUILD_NUMBER}')
+                }
+                sh 'docker rmi $(docker images | grep \'aeropay-web-app\' | awk \'{print $3}\') -f || echo "No matching aeropay-web-app images to remove"'
+            
+                sh "docker tag accelaero/aero-pay-checkout-web-app:latest accelaero/revamp/aero-pay/aero-pay-checkout-web-app:latest"
+                docker.withRegistry('https://fra.ocir.io') {
+                    docker.image('accelaero/revamp/aero-pay/aero-pay-checkout-web-app:latest').push('1.0.${BUILD_NUMBER}')
+                }
+                sh 'docker rmi $(docker images | grep \'aero-pay-checkout-web-app\' | awk \'{print $3}\') -f || echo "No matching aero-pay-checkout-web-app images to remove"'
+          
+          }
+        }/*,
+        api_doc :{
+            node('aeropay_build_server') {
+                sh  "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                sh "docker tag accelaero/api-doc:latest accelaero/revamp/aero-pay/api-doc:latest"
+                docker.withRegistry('https://fra.ocir.io') {
+                    docker.image('accelaero/revamp/aero-pay/api-doc:latest').push('1.0.${BUILD_NUMBER}')
+                }
+
+                sh 'docker rmi $(docker images | grep \'api-doc\' | awk \'{print $3}\') -f || echo "No matching api-doc images to remove"'
+            }
+        },
+        aeropay_api_test_harness: {
+            node('aeropay_build_server') {
+                sh  "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                sh "docker tag accelaero/aero-pay-test-harness:latest accelaero/revamp/aero-pay/aero-pay-test-harness:latest"
+                docker.withRegistry('https://fra.ocir.io') {
+                    docker.image('accelaero/revamp/aero-pay/aero-pay-test-harness:latest').push('1.0.${BUILD_NUMBER}')
+                }
+                sh 'docker rmi $(docker images | grep \'aero-pay-test-harness\' | awk \'{print $3}\') -f || echo "No matching aero-pay-test-harness images to remove"'
+
+            }
+        }*/
+
+)
+
+stage 'Configure couchbase'
+
+node('aeropay_api_service'){
+    //sh 'curl -X DELETE -u Administrator:password 172.21.7.66:8091/pools/default/buckets/aero-pay'
+    sh 'curl -X DELETE -u Administrator:password 172.21.7.66:8091/pools/default/buckets/ifg-mock'
+    sh 'curl -X DELETE -u Administrator:password 172.21.7.66:8091/pools/default/buckets/aero-agent-mock'
+    sh 'curl -X DELETE -u Administrator:password 172.21.7.66:8091/pools/default/buckets/aero-pay-ui'
+    sh 'curl -X DELETE -u Administrator:password 172.21.7.66:8091/pools/default/buckets/aero-master-mock'
+    // sh 'curl -X DELETE -u Administrator:password 172.21.7.66:8091/pools/default/buckets/aero-pay-master'
+    sleep 5
+    //sh 'curl -X POST -u Administrator:password 172.21.7.66:8091/pools/default/buckets -d name="aero-pay" -d ramQuotaMB="250" -d saslPassword="password" -d bucketType=couchbase -d flushEnabled=1'
+    sh 'curl -X POST -u Administrator:password 172.21.7.66:8091/pools/default/buckets -d name="ifg-mock" -d ramQuotaMB="250" -d saslPassword="password" -d bucketType=couchbase -d flushEnabled=1'
+    sh 'curl -X POST -u Administrator:password 172.21.7.66:8091/pools/default/buckets -d name="aero-agent-mock" -d ramQuotaMB="250" -d saslPassword="password" -d bucketType=couchbase  -d flushEnabled=1'
+    sh 'curl -X POST -u Administrator:password 172.21.7.66:8091/pools/default/buckets -d name="aero-pay-ui" -d ramQuotaMB="250" -d saslPassword="password" -d bucketType=couchbase -d flushEnabled=1'
+    sh 'curl -X POST -u Administrator:password 172.21.7.66:8091/pools/default/buckets -d name="aero-master-mock" -d ramQuotaMB="250" -d saslPassword="password" -d bucketType=couchbase -d flushEnabled=1'
+    // sh 'curl -X POST -u Administrator:password 172.21.7.66:8091/pools/default/buckets -d name="aero-pay-master" -d ramQuotaMB="250" -d saslPassword="password" -d bucketType=couchbase -d flushEnabled=1'
+
+    sleep 10
+    sh 'curl -X POST -u -u Administrator:password http://172.21.7.66:8091/settings/indexes -d \'indexerThreads=0\' -d \'logLevel=info\' -d \'maxRollbackPoints=5\' -d \'memorySnapshotInterval=200\' -d \'stableSnapshotInterval=5000\' -d \'storageMode=forestdb\''
+
+    sleep 5
+    //sh 'curl -X POST -v -u Administrator:password http://172.21.7.66:8093/query/service -d \'statement=CREATE PRIMARY INDEX idx_primary_pay ON `aero-pay`\''
+    sh 'curl -X POST -v -u Administrator:password http://172.21.7.66:8093/query/service -d \'statement=CREATE PRIMARY INDEX idx_primary_ifg_mock ON `ifg-mock`\''
+    sh 'curl -X POST -v -u Administrator:password http://172.21.7.66:8093/query/service -d \'statement=CREATE PRIMARY INDEX idx_primary_aero_agent_mock ON `aero-agent-mock`\''
+    sh 'curl -X POST -v -u Administrator:password http://172.21.7.66:8093/query/service -d \'statement=CREATE PRIMARY INDEX idx_primary_aero_pay_ui ON `aero-pay-ui`\''
+    // sh 'curl -X POST -v -u Administrator:password http://172.21.7.66:8093/query/service -d \'statement=CREATE PRIMARY INDEX idx_primary_aero_pay_master ON `aero-pay-master`\''
+    sh 'curl -X POST -v -u Administrator:password http://172.21.7.66:8093/query/service -d \'statement=CREATE PRIMARY INDEX idx_primary_aero_pay_ui ON `aero-master-mock`\''
+}
+
+stage 'Deploy'
+
+parallel(
+        aeropay_api: {
+            node('aeropay_api_service') {
+                sh "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                docker.withRegistry('https://fra.ocir.io') {
+                    sh 'docker stop api-service || echo "No api-service container to stop"'
+                    sh 'docker rm api-service|| echo "No api-service to remove"'
+                    sh 'docker rmi $(docker images | grep \'api-service\' | awk \'{print $3}\') -f || echo "No api-service images to remove"'
+                    docker.image('accelaero/revamp/aero-pay/api-service:1.0.${BUILD_NUMBER}').pull()
+                    sh 'docker run --restart=always \
+                            --name api-service \
+                -e couchbase_username=Administrator \
+                -e couchbase_password=password \
+                -e couchbase_bootstrap-hosts=172.21.7.66 \
+                -e spring.profiles.active=test \
+                -p 9090:9090 \
+                -d fra.ocir.io/accelaero/revamp/aero-pay/api-service:1.0.${BUILD_NUMBER}'
+                }
+            }
+        },
+        envoy_proxy: {
+            node('aeropay_envoy_proxy') {
+                sh "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                docker.withRegistry('https://fra.ocir.io') {
+                    sh 'docker stop envoy-proxy || echo "No envoy-proxy container to stop"'
+                    sh 'docker rm envoy-proxy|| echo "No envoy-proxy to remove"'
+                    sh 'docker rmi $(docker images | grep \'envoy-proxy\' | awk \'{print $3}\') -f || echo "No envoy-proxy images to remove"'
+                    docker.image('accelaero/revamp/aero-pay/envoy-proxy-service:1.0.${BUILD_NUMBER}').pull()
+                    sh 'docker run --restart=always \
+                            --name envoy-proxy \
+                            -e GRPC_HOST=172.21.7.6 \
+                            -e GRPC_PORT=9090 \
+                            -p 51051:51051 \
+                            -d fra.ocir.io/accelaero/revamp/aero-pay/envoy-proxy-service:1.0.${BUILD_NUMBER}'
+                }
+            }
+        },
+        aeropay_api_ifg_mock: {
+            node('aeropay_ifg_api_mock_service') {
+                sh "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                docker.withRegistry('https://fra.ocir.io') {
+                    sh 'docker stop aero-ifg-api-mock-service || echo "No aero-ifg-api-mock-service container to stop"'
+                    sh 'docker rm aero-ifg-api-mock-service|| echo "No aero-ifg-api-mock-service to remove"'
+                    sh 'docker rmi $(docker images | grep \'aero-ifg-api-mock-service\' | awk \'{print $3}\') -f || echo "No aero-ifg-api-mock-service images to remove"'
+                    docker.image('accelaero/revamp/aero-pay/aero-ifg-api-mock-service:1.0.${BUILD_NUMBER}').pull()
+                    sh 'docker run --restart=always \
+                            --name aero-ifg-api-mock-service \
+                -e couchbase_username=Administrator \
+                -e couchbase_password=password \
+                -e couchbase_bootstrap-hosts=172.21.7.66 \
+        -e spring.profiles.active=test \
+                -p 9090:9090 \
+                -d fra.ocir.io/accelaero/revamp/aero-pay/aero-ifg-api-mock-service:1.0.${BUILD_NUMBER}'
+                }
+            }
+        },
+        aeropay_api_aeroagent_mock: {
+            node('aero_agent_mock_service') {
+                sh "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                docker.withRegistry('https://fra.ocir.io') {
+                    sh 'docker stop aero-agent-api-mock-service || echo "No aero-agent-api-mock-service container to stop"'
+                    sh 'docker rm aero-agent-api-mock-service|| echo "No aero-agent-api-mock-service to remove"'
+                    sh 'docker rmi $(docker images | grep \'aero-agent-api-mock-service\' | awk \'{print $3}\') -f || echo "No aero-agent-api-mock-service images to remove"'
+                    docker.image('accelaero/revamp/aero-pay/aero-agent-api-mock-service:1.0.${BUILD_NUMBER}').pull()
+                    sh 'docker run --restart=always \
+                            --name aero-agent-api-mock-service \
+                -e couchbase_username=Administrator \
+                -e couchbase_password=password \
+                -e couchbase_bootstrap-hosts=172.21.7.66 \
+        -e spring.profiles.active=test \
+                -p 9090:9090 \
+                -d fra.ocir.io/accelaero/revamp/aero-pay/aero-agent-api-mock-service:1.0.${BUILD_NUMBER}'
+                }
+            }
+        },
+        aeropay_api_aeromaster_mock: {
+            node('aero_master_mock_service') {
+                sh "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                docker.withRegistry('https://fra.ocir.io') {
+                    sh 'docker stop aero-master-api-service || echo "No aero-master-api-service container to stop"'
+                    sh 'docker rm aero-master-api-service|| echo "No aero-master-api-service to remove"'
+                    sh 'docker rmi $(docker images | grep \'aero-master-api-service\' | awk \'{print $3}\') -f || echo "No aero-master-api-service images to remove"'
+                    docker.image('accelaero/revamp/aero-pay/aero-master-api-service:1.0.${BUILD_NUMBER}').pull()
+                    sh 'docker run --restart=always \
+                            --name aero-master-api-service \
+                -e couchbase_username=Administrator \
+                -e couchbase_password=password \
+                -e couchbase_bootstrap-hosts=172.21.7.66 \
+        -e spring.profiles.active=test \
+                -p 9090:9090 \
+                -d fra.ocir.io/accelaero/revamp/aero-pay/aero-master-api-service:1.0.${BUILD_NUMBER}'
+                }
+            }
+        },
+        web_app : {
+            node('aeropay_frontend') {
+                sh "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                docker.withRegistry('https://fra.ocir.io') {
+                    sh 'docker stop aero-pay-ui || echo "No aero-pay-ui container to stop"'
+                    sh 'docker rm aero-pay-ui || echo "No aero-pay-ui to remove"'
+                    sh 'docker rmi $(docker images | grep \'aeropay-web-app\' | awk \'{print $3}\') -f || echo "No aeropay-web-app images to remove"'
+                    docker.image('accelaero/revamp/aero-pay/aeropay-web-app:1.0.${BUILD_NUMBER}').pull()
+                    sh 'docker run --restart=always    \
+                     --name aero-pay-ui   \
+                     -e API_URL="http://172.21.7.5:51051/"  \
+                     -e NGINX_PORT=80 \
+                     -e NODE_ENV="prod" \
+                     -p 80:80  -d fra.ocir.io/accelaero/revamp/aero-pay/aeropay-web-app:1.0.${BUILD_NUMBER}'
+
+                    sh 'docker stop aero-pay-checkout-ui || echo "No aero-pay-checkout-ui container to stop"'
+                    sh 'docker rm aero-pay-checkout-ui || echo "No aero-pay-checkout-ui to remove"'
+                    sh 'docker rmi $(docker images | grep \'aero-pay-checkout-web-app\' | awk \'{print $3}\') -f || echo "No aero-pay-checkout-web-app images to remove"'
+                    docker.image('accelaero/revamp/aero-pay/aero-pay-checkout-web-app:1.0.${BUILD_NUMBER}').pull()
+                    sh 'docker run --restart=always    \
+                     --name aero-pay-checkout-ui   \
+                     -e API_URL="http://172.21.7.5:51051/"  \
+                     -e NGINX_PORT=80 \
+                     -e NODE_ENV="prod" \
+                     -e ENV_PROFILE="test" \
+                     -p 9090:8082  -d fra.ocir.io/accelaero/revamp/aero-pay/aero-pay-checkout-web-app:1.0.${BUILD_NUMBER}'
+					 
+					 /*sh 'docker stop api-doc || echo "No api-doc container to stop"'
+                    sh 'docker rm api-doc|| echo "No api-doc to remove"'
+                    sh 'docker rmi $(docker images | grep \'api-doc\' | awk \'{print $3}\') -f || echo "No api-doc images to remove"'
+                    docker.image('accelaero/revamp/aero-pay/api-doc:1.0.${BUILD_NUMBER}').pull()
+                    sh 'docker run --restart=always \
+                     -p 8085:8085 \
+                     -e SWAGGER_JSON=/home/swagger/swagger.json \
+                     --name api-doc \
+                     -d fra.ocir.io/accelaero/revamp/aero-pay/api-doc:1.0.${BUILD_NUMBER}'*/
+                }
+            }
+        }/*,
+        api_doc :{
+            node('aero_pay_services_loadtest') {
+                sh  "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                docker.withRegistry('https://fra.ocir.io') {
+                    sh 'docker stop api-doc || echo "No api-doc container to stop"'
+                    sh 'docker rm api-doc|| echo "No api-doc to remove"'
+                    sh 'docker rmi $(docker images | grep \'api-doc\' | awk \'{print $3}\') -f || echo "No api-doc images to remove"'
+                    docker.image('accelaero/revamp/aero-pay/api-doc:1.0.${BUILD_NUMBER}').pull()
+                    sh 'docker run --restart=always \
+                -p 9090:8080 \
+                -e SWAGGER_JSON=/home/swagger/swagger.json \
+                --name api-doc \
+                -d fra.ocir.io/accelaero/revamp/aero-pay/api-doc:1.0.${BUILD_NUMBER}'
+                }
+            }
+        },
+        aeropay_api_test_harness: {
+            node('aero_pay_test_harness') {
+                sh "docker login --username accelaero/registry --password='5E38:f)J{AxE600>b(IE' fra.ocir.io"
+                docker.withRegistry('https://fra.ocir.io') {
+                    sh 'docker stop aero-pay-test-harness || echo "No aero-pay-test-harness container to stop"'
+                    sh 'docker rm aero-pay-test-harness|| echo "No aero-pay-test-harness to remove"'
+                    sh 'docker rmi $(docker images | grep \'aero-pay-test-harness\' | awk \'{print $3}\') -f || echo "No aero-pay-test-harness images to remove"'
+                    docker.image('accelaero/revamp/aero-pay/aero-pay-test-harness:1.0.${BUILD_NUMBER}').pull()
+                    sh 'docker run --restart=always \
+                            --name aero-pay-test-harness \
+                -e couchbase_username=Administrator \
+                -e couchbase_password=password \
+                -e couchbase_bootstrap-hosts=172.21.7.66 \
+                -p 9090:9090 \
+                -d fra.ocir.io/accelaero/revamp/aero-pay/aero-pay-test-harness:1.0.${BUILD_NUMBER}'
+                }
+            }
+        }*/
+        
+)
+
+
+// stage 'Run Test Automation Suite'
+// node('aeropay_build_server'){
+//  dir('harness/aero-pay-test-harness'){
+//         try {
+//             sh './gradlew test -DCucumber.options="--tags ~@Manual"'
+//       }
+//       finally {
+//             cucumber fileIncludePattern: '**/*.json', jsonReportDirectory: 'target/', sortingMethod: 'ALPHABETICAL'
+//     }
+//   }
+// } 
+
+ 
